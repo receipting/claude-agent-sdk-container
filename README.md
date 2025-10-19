@@ -1,8 +1,8 @@
 # Claude Agent SDK Container
 
-**Deploy Claude Agent SDK to your favorite cloud provider so that it runs using your Anthropic Max Plan tokens rather than API tokens!**
+**Deploy Claude Agent SDK to your favorite cloud provider using standard Anthropic API keys!**
 
-This repository containerizes the Claude Agent SDK, allowing you to run it with your Anthropic subscription on AWS, Google Cloud, Azure, or any cloud platform that supports Docker. Once deployed, you can interact with Claude through a web-based CLI or a REST API from any application or service!
+This repository containerizes the Claude Agent SDK, allowing you to run it on AWS, Google Cloud, Azure, or any cloud platform that supports Docker. Once deployed, you can interact with Claude through a web-based CLI or a REST API from any application or service!
 
 **🤖 Multi-Agent Feature:** The `/query` endpoint includes a built-in example of multi-agent collaboration where a Canadian 🍁 and Australian 🇦🇺 agent discuss user requests and provide their unique perspectives. This demonstrates how to use the Claude Agent SDK's Task tool for subagent delegation. [See examples below](#examples) or customize the agents in `server.ts`.
 
@@ -88,11 +88,11 @@ Once the security audit completes, you're safe to proceed with setup!
 Claude will tell you to run the setup script in a **separate terminal window**:
 
 ```bash
-./setup-tokens.sh
+./setup-api-key.sh
 ```
 
 **The script automatically handles:**
-1. ✅ Getting your Claude OAuth token (opens browser to Anthropic)
+1. ✅ Enter your Anthropic API key (from https://console.anthropic.com/settings/keys)
 2. ✅ Creating a unique GitHub App with one click (opens browser to GitHub)
    - Auto-generates unique name like `claude-agent-sdk-202510052056`
    - Or reuses existing credentials if found in `.env`
@@ -101,7 +101,7 @@ Claude will tell you to run the setup script in a **separate terminal window**:
 5. ✅ Writing all credentials to `.env` file
 
 **What you'll do:**
-- Click "Authorize" in browser to login to Anthropic (for Claude token)
+- Paste your Anthropic API key from the console
 - Click "Create GitHub App" in browser (literally one click!)
 - Press Enter to accept your username in allowlist (or add more users)
 - That's it - all credentials automatically saved!
@@ -110,7 +110,7 @@ Claude will tell you to run the setup script in a **separate terminal window**:
 
 ### Step 3: Return to Claude Code
 
-After `./setup-tokens.sh` completes, go back to Claude Code and tell it:
+After `./setup-api-key.sh` completes, go back to Claude Code and tell it:
 
 ```
 Please run ./test.sh
@@ -154,15 +154,11 @@ Claude automatically sees your setup state and guides you - no manual checks nee
 <details>
 <summary>Click here if you prefer to set things up manually (or if automated setup fails)</summary>
 
-### Manual Step 1: Get Your Claude OAuth Token
+### Manual Step 1: Get Your Anthropic API Key
 
-```bash
-claude setup-token
-```
+Visit https://console.anthropic.com/settings/keys and create a new API key.
 
-This opens a browser to login to Anthropic. After login, the token appears in your terminal.
-
-COPY IT NOW - you can't get it again!
+COPY IT NOW - you won't be able to see it again!
 
 ### Manual Step 2: Create GitHub App
 
@@ -187,7 +183,7 @@ After creating the app, copy the **Client ID** and generate a **Client Secret** 
 
 ```bash
 cat > .env << 'EOF'
-CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-YOUR-TOKEN-HERE
+ANTHROPIC_API_KEY=sk-ant-api03-YOUR-API-KEY-HERE
 CLAUDE_AGENT_SDK_CONTAINER_API_KEY=pick-any-random-string-as-your-api-key
 
 # GitHub App Configuration (Required for web CLI)
@@ -201,7 +197,7 @@ EOF
 ```
 
 **Required:**
-- **CLAUDE_CODE_OAUTH_TOKEN**: Your Claude Code OAuth token
+- **ANTHROPIC_API_KEY**: Your Anthropic API key from https://console.anthropic.com/settings/keys
 - **CLAUDE_AGENT_SDK_CONTAINER_API_KEY**: API key for REST endpoint protection
 - **GITHUB_CLIENT_ID**: GitHub OAuth App Client ID
 - **GITHUB_CLIENT_SECRET**: GitHub OAuth App Client Secret
@@ -427,18 +423,52 @@ docker-compose up -d
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `CLAUDE_CODE_OAUTH_TOKEN` | Yes | Your Claude Code OAuth token |
-| `CLAUDE_AGENT_SDK_CONTAINER_API_KEY` | No* | API key for endpoint authentication |
-| `GITHUB_CLIENT_ID` | Yes** | GitHub App Client ID |
-| `GITHUB_CLIENT_SECRET` | Yes** | GitHub App Client Secret |
-| `ALLOWED_GITHUB_USERS` | Yes*** | Comma-separated list of allowed GitHub usernames |
-| `ALLOWED_GITHUB_ORG` | Yes*** | GitHub organization name for access control |
+| `ANTHROPIC_API_KEY` | Yes* | Your Anthropic API key from https://console.anthropic.com/settings/keys |
+| `CLAUDE_CODE_OAUTH_TOKEN` | Yes* | Alternative: Claude Code OAuth token (requires Anthropic permission) |
+| `CLAUDE_AGENT_SDK_CONTAINER_API_KEY` | No** | API key for endpoint authentication |
+| `GITHUB_CLIENT_ID` | Yes*** | GitHub App Client ID |
+| `GITHUB_CLIENT_SECRET` | Yes*** | GitHub App Client Secret |
+| `ALLOWED_GITHUB_USERS` | Yes**** | Comma-separated list of allowed GitHub usernames |
+| `ALLOWED_GITHUB_ORG` | Yes**** | GitHub organization name for access control |
 | `SESSION_SECRET` | No | JWT signing secret (generate with: `openssl rand -hex 32`) |
 | `PORT` | No | Server port (default: 8080) |
 
-*If `CLAUDE_AGENT_SDK_CONTAINER_API_KEY` is not set, the `/query` endpoint will be publicly accessible.
-**Required only for web CLI access. REST API works without GitHub App authentication.
-***At least one of `ALLOWED_GITHUB_USERS` or `ALLOWED_GITHUB_ORG` must be set for security.
+*Either `ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN` must be set. Use `ANTHROPIC_API_KEY` (recommended).
+**If `CLAUDE_AGENT_SDK_CONTAINER_API_KEY` is not set, the `/query` endpoint will be publicly accessible.
+***Required only for web CLI access. REST API works without GitHub App authentication.
+****At least one of `ALLOWED_GITHUB_USERS` or `ALLOWED_GITHUB_ORG` must be set for security.
+
+### Alternative: OAuth Token Authentication (Requires Anthropic Permission)
+
+If you have prior approval from Anthropic to use Claude Code OAuth tokens, you can use the OAuth setup approach:
+
+**Prerequisites:**
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+**Setup:**
+```bash
+./setup-tokens.sh
+```
+
+This script will:
+- Get your Claude OAuth token via `claude setup-token`
+- Set up GitHub App
+- Configure access control
+- Write credentials to `.env`
+
+**Manual OAuth Setup:**
+```bash
+# Get OAuth token
+claude setup-token
+
+# Add to .env file
+CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-YOUR-OAUTH-TOKEN-HERE
+# (instead of ANTHROPIC_API_KEY)
+```
+
+**⚠️ Important:** OAuth tokens require prior approval from Anthropic. For most users, use `ANTHROPIC_API_KEY` instead.
 
 ### GitHub Access Control
 

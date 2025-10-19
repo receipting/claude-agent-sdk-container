@@ -131,7 +131,7 @@ if (process.env.NODE_ENV !== 'test') {
   const isDocker = fs.existsSync('/.dockerenv') || process.env.container === 'docker';
   console.log("Claude Agent SDK Container starting...");
   console.log("Environment:", isDocker ? "Docker" : "Local");
-  console.log("Claude token:", !!process.env.CLAUDE_CODE_OAUTH_TOKEN ? "✓" : "✗");
+  console.log("Anthropic API key:", !!(process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_CODE_OAUTH_TOKEN) ? "✓" : "✗");
   console.log("API protection:", !!process.env.CLAUDE_AGENT_SDK_CONTAINER_API_KEY ? "✓" : "✗");
   console.log("GitHub OAuth:", !!process.env.GITHUB_CLIENT_ID && !!process.env.GITHUB_CLIENT_SECRET ? "✓" : "✗");
   if (allowedGithubUsers.length > 0) console.log("GitHub users allowlist:", allowedGithubUsers.length, "users");
@@ -140,12 +140,12 @@ if (process.env.NODE_ENV !== 'test') {
 
 // Health check endpoint
 app.get("/health", (c) => {
-  const hasToken = !!process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  const hasApiKey = !!(process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_CODE_OAUTH_TOKEN);
   const sdkLoaded = typeof query === "function";
 
   return c.json({
-    status: hasToken && sdkLoaded ? "healthy" : "unhealthy",
-    hasToken,
+    status: hasApiKey && sdkLoaded ? "healthy" : "unhealthy",
+    hasApiKey,
     sdkLoaded,
     message: "Claude Agent SDK API with CLI",
     timestamp: new Date().toISOString(),
@@ -182,8 +182,8 @@ app.post("/query", async (c) => {
       return c.json({ error: 'Prompt too long. Maximum 100000 characters' }, 400);
     }
 
-    if (!process.env.CLAUDE_CODE_OAUTH_TOKEN) {
-      return c.json({ error: "CLAUDE_CODE_OAUTH_TOKEN not configured" }, 401);
+    if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_CODE_OAUTH_TOKEN) {
+      return c.json({ error: "ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN must be configured" }, 401);
     }
 
     const messages = [];
@@ -363,10 +363,10 @@ export const websocketHandler = (c: any) => ({
         return;
       }
 
-      if (!process.env.CLAUDE_CODE_OAUTH_TOKEN) {
+      if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_CODE_OAUTH_TOKEN) {
         ws.send(JSON.stringify({
           type: "error",
-          message: "CLAUDE_CODE_OAUTH_TOKEN not configured"
+          message: "ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN must be configured"
         }));
         return;
       }
