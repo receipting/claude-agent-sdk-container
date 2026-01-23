@@ -1,0 +1,14 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci-cd:
+    uses: receipting/shared-workflows/.github/workflows/deploy-cloudflare-worker.yml@v1
+    with:
+      skip_deploy: ${{ github.event_name == 'pull_request' }}
+    secrets: inherit
